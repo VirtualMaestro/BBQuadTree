@@ -5,9 +5,6 @@ package quadtree
 	 */
 	public class BBQuadNode extends BBRect
 	{
-		// need for pool
-		private var next:BBQuadNode = null;
-
 		//
 		internal var parent:BBQuadNode = null;
 		internal var depth:int = 0;
@@ -116,7 +113,7 @@ package quadtree
 		final internal function getChildNodeContainedBox(p_box:BBBox):BBQuadNode
 		{
 			if (depth >= tree.maxDepth) return null;
-			
+
 			var bLeftTopX:Number = p_box.leftTopX;
 			var bLeftTopY:Number = p_box.leftTopY;
 			var bRightBottomX:Number = p_box.rightBottomX;
@@ -193,7 +190,7 @@ package quadtree
 			if (!hasChildrenNodes)
 			{
 				var nSize:Number = greaterSide * 0.5;
-				var nDepth:int = depth+1;
+				var nDepth:int = depth + 1;
 				var nX:Number;
 				var nY:Number;
 
@@ -239,7 +236,7 @@ package quadtree
 		 */
 		final internal function updateDepth():void
 		{
-			if (parent) depth = parent.depth+1;
+			if (parent) depth = parent.depth + 1;
 
 			if (hasChildrenNodes)
 			{
@@ -259,10 +256,11 @@ package quadtree
 			// gets boxes
 			if (boxesListHead)
 			{
+				var len:int = p_boxesContainer.length;
 				var box:BBBox = boxesListHead;
-				while(box)
+				while (box)
 				{
-					p_boxesContainer[p_boxesContainer.length] = box;
+					p_boxesContainer[len++] = box;
 					box = box.next;
 				}
 			}
@@ -284,20 +282,20 @@ package quadtree
 		final internal function dispose():void
 		{
 			isDisposed = true;
-			
+
 			// dispose the children-boxes
 			if (numBoxes > 0)
 			{
 				var box:BBBox = boxesListHead;
 				var curBox:BBBox;
-				while(box)
+				while (box)
 				{
 					curBox = box;
 					box = box.next;
 					curBox.dispose();
 				}
 			}
-			
+
 			boxesListHead = null;
 			boxesListTail = null;
 			numBoxes = 0;
@@ -320,7 +318,8 @@ package quadtree
 		//////////////////////
 
 		//
-		static private var _pool:BBQuadNode = null;
+		static private var _pool:Vector.<BBQuadNode> = new Vector.<BBQuadNode>(20);
+		static private var _size:int = 0;
 
 		/**
 		 * Returns node. Uses pool or creates new instance.
@@ -328,11 +327,9 @@ package quadtree
 		static public function get(p_leftTopX:Number = 0, p_leftTopY:Number = 0, p_size:Number = 10):BBQuadNode
 		{
 			var node:BBQuadNode;
-			if (_pool)
+			if (_size > 0)
 			{
-				node = _pool;
-				_pool = _pool.next;
-				node.next = null;
+				node = _pool[--_size];
 				node.set(p_leftTopX, p_leftTopY, p_size, p_size);
 				node.isDisposed = false;
 			}
@@ -347,10 +344,7 @@ package quadtree
 		[Inline]
 		static internal function put(p_node:BBQuadNode):void
 		{
-			if (_pool) p_node.next = _pool;
-			else p_node.next = null;
-			
-			_pool = p_node
+			_pool[_size++] = p_node;
 		}
 
 		/**
@@ -358,11 +352,12 @@ package quadtree
 		 */
 		static internal function rid():void
 		{
-			if (_pool)
+			while (_size > 0)
 			{
-				_pool.next = null;
-				_pool = null;
+				_pool[--_size] = null;
 			}
+
+			_pool.length = 0;
 		}
 	}
 }

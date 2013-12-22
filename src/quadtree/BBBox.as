@@ -26,7 +26,7 @@ package quadtree
 		 */
 		public function setPosition(p_x:Number, p_y:Number):void
 		{
-			setCenterXY(p_x,  p_y);
+			setCenterXY(p_x, p_y);
 			update();
 		}
 
@@ -35,7 +35,7 @@ package quadtree
 		 */
 		public function shiftPosition(shiftX:Number, shiftY:Number):void
 		{
-			setPosition(centerX+shiftX, centerY+shiftY);
+			setPosition(centerX + shiftX, centerY + shiftY);
 		}
 
 		/**
@@ -58,7 +58,7 @@ package quadtree
 				super.setSize(p_widthBox, p_heightBox);
 			}
 
-			setCenterXY(p_x,  p_y);
+			setCenterXY(p_x, p_y);
 
 			update();
 		}
@@ -70,61 +70,52 @@ package quadtree
 		{
 			if (node) node.tree.update(this);
 		}
-		
+
 		/**
 		 */
 		public function get x():Number
 		{
 			return centerX;
 		}
-		
+
 		/**
 		 */
 		public function get y():Number
 		{
 			return centerY;
 		}
-		
+
 		/**
 		 */
 		public function get widthBox():Number
 		{
 			return width;
 		}
-		
+
 		/**
 		 */
 		public function get heightBox():Number
 		{
 			return height;
 		}
-		
-//		/**
-//		 */
-//		internal function isEntireInNode():Boolean
-//		{
-//			return isInside(node);
-//		}
 
 		/**
 		 * Disposes the box and back it to the pool.
 		 */
 		public function dispose():void
 		{
-			trace("Try to dispose box");
-			
 			if (!_isDispose)
 			{
 				_isDispose = true;
-				
-				if (node) 
+
+				if (node)
 				{
 					var tNode:BBQuadNode = node;
 					node.unlinkBox(this);
 					tNode.tree.cleanBranch(tNode);
 					tNode.tree.checkNodeMoveUpPretender(tNode);
 				}
-				
+
 				//
 				if (disposeCallback != null) disposeCallback(this);
 				disposeCallback = null;
@@ -139,7 +130,8 @@ package quadtree
 		//////////////////////
 
 		//
-		static private var _pool:BBBox = null;
+		static private var _pool:Vector.<BBBox> = new Vector.<BBBox>(20);
+		static private var _size:int = 0;
 
 		/**
 		 * Returns box. Uses pool or creates new instance.
@@ -147,12 +139,9 @@ package quadtree
 		static internal function get(p_width:Number = 10, p_height:Number = 10, p_x:Number = 0, p_y:Number = 0):BBBox
 		{
 			var box:BBBox;
-			if (_pool)
+			if (_size > 0)
 			{
-				box = _pool;
-				_pool = _pool.next;
-				
-				box.next = null;
+				box = _pool[--_size];
 				box._isDispose = false;
 				box.setPosAndSize(p_x, p_y, p_width, p_height);
 			}
@@ -164,18 +153,18 @@ package quadtree
 		/**
 		 * Put box to pool.
 		 */
+		[Inline]
 		static internal function put(p_box:BBBox):void
 		{
-			if (_pool) p_box.next = _pool;
-			_pool = p_box;
+			_pool[_size++] = p_box;
 		}
-		
+
 		/**
 		 * Pre-cache given number of boxes.
 		 */
 		static public function preCache(p_numBoxes:int):void
 		{
-			for (var i:int = 0; i < p_numBoxes; i++) 
+			for (var i:int = 0; i < p_numBoxes; i++)
 			{
 				put(new BBBox());
 			}
@@ -186,12 +175,12 @@ package quadtree
 		 */
 		static internal function rid():void
 		{
-			if (_pool)
+			while (_size > 0)
 			{
-				_pool.prev = null;
-				_pool.next = null;
-				_pool = null;
+				_pool[--_size] = null;
 			}
+
+			_pool.length = 0;
 		}
 	}
 }

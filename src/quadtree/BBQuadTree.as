@@ -11,6 +11,7 @@ package quadtree
 		//
 		private var _root:BBQuadNode = null;
 		private var _queueUpdate:Vector.<BBBox> = null;
+		private var _queueUpdateLen:int = 0;
 
 		//
 		private var _queryRect:BBRect;
@@ -25,7 +26,7 @@ package quadtree
 			_root = BBQuadNode.get(p_startX, p_startY, p_quadSize);
 			_root.tree = this;
 
-			_queueUpdate = new Vector.<BBBox>;
+			_queueUpdate = new Vector.<BBBox>(20);
 
 			//
 			_queryRect = new BBRect();
@@ -69,15 +70,9 @@ package quadtree
 		[Inline]
 		final private function updateBoxesInQueue():void
 		{
-			var boxUpd:BBBox;
-			var len:int;
-			while (_queueUpdate.length > 0)
+			while (_queueUpdateLen > 0)
 			{
-				len = _queueUpdate.length - 1;
-				boxUpd = _queueUpdate[len];
-				_queueUpdate.length = len;
-
-				update(boxUpd);
+				update(_queueUpdate[--_queueUpdateLen]);
 			}
 		}
 
@@ -100,7 +95,7 @@ package quadtree
 					resultNode = iteratorNode;
 
 					if ((resultNode.numBoxes == 0 && !resultNode.hasChildrenNodes) || resultNode.halfWidth < boxGreaterSide || resultNode.depth >= maxDepth) break;
-					else if (resultNode.numBoxes == 1) _queueUpdate[_queueUpdate.length] = resultNode.boxesListHead;
+					else if (resultNode.numBoxes == 1) _queueUpdate[_queueUpdateLen++] = resultNode.boxesListHead;
 				}
 				else break;
 			}
@@ -108,7 +103,7 @@ package quadtree
 			//
 			if (resultNode != currentNode)
 			{
-				if (resultNode.numBoxes == 1) _queueUpdate[_queueUpdate.length] = resultNode.boxesListHead;
+				if (resultNode.numBoxes == 1) _queueUpdate[_queueUpdateLen++] = resultNode.boxesListHead;
 
 				currentNode.unlinkBox(p_box);
 				resultNode.addBox(p_box);
@@ -369,8 +364,6 @@ package quadtree
 			_root.updateDepth();
 		}
 
-
-
 		/**
 		 * Returns boxes which in given rect.
 		 * Parameters is rectangle with left-top point and right-bottom point.
@@ -415,9 +408,10 @@ package quadtree
 				var box:BBBox = p_node.boxesListHead;
 				if (box)
 				{
+					var len:int = _result.length;
 					while (box)
 					{
-						if (box.isIntersect(p_rect)) _result[_result.length] = box;
+						if (box.isIntersect(p_rect)) _result[len++] = box;
 						box = box.next;
 					}
 				}
